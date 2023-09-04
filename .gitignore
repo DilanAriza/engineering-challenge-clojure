@@ -1,0 +1,14 @@
+/target/
+/classes/
+/.cpcache/
+/.nrepl-port
+
+/.idea/
+*.iml
+*.iws
+
+.DS_Store
+Thumbs.db
+
+.env
+/resources/private/
