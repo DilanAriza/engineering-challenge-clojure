@@ -12,52 +12,31 @@
 ;; ID of invoice
 (println "Invoice ID: " (:invoice/id invoice))
 
-;; print info of invoices to validate in console (per item)
-(doseq [item (:invoice/items invoice)]
-  ;; Item information
-  (println "Item ID:" (:invoice-item/id item))
-  (println "Item SKU:" (:invoice-item/sku item))
-  (doseq [tax (:taxable/taxes item)]
-    ;: tax per item information
-    (println "Item Tax ID:" (:tax/id tax))
-    (println "Item Tax Category:" (:tax/category tax))
-    (println "Item Tax Rate:" (:tax/rate tax))
-    )
-  (doseq [retention (:retentionable/retentions item)]
-    ;: Retention per item information
-    (println "Item Retention ID:" (:retention/id retention))
-    (println "Item Retention Category:" (:retention/category retention))
-    (println "Item Retention Rate:" (:retention/rate retention))
-    )
-  )
-
-
 ;; match iva, iva category, tax rate 19% in taxable/taxes list
 (defn match-iva [item]
-  (some #(and (= (:tax/category %) :iva)
-              (= (:tax/rate %) 19))
-        (:taxable/taxes item)))
+  (->> (:taxable/taxes item)
+       (some #(and (= (:tax/category %) :iva)
+                   (= (:tax/rate %) 19)))))
 
 ;; match retention, ret_fuente category, retantion rate 1% in retentionable/retentions list
 (defn match-retention [item]
-  (some #(and (= (:retention/category %) :ret_fuente)
-              (= (:retention/rate %) 1))
-        (:retentionable/retentions item)))
+  (->> (:retentionable/retentions item)
+       (some #(and (= (:retention/category %) :ret_fuente)
+                   (= (:retention/rate %) 1)))))
 
 
 ;; function to filter items in invoice
 (defn validItems [invoice]
-  (let [items (:invoice/items invoice)
-        ;; Filter to items with respective functions
-        filtered-items (filter #(or
-                                  ;; verify match iva and not match retention
-                                  (and (match-iva %) (not (match-retention %)))
-                                  ;; verify match retention and not match iva
-                                  (and (match-retention %) (not (match-iva %))))
-                               items)]
+  (let [filtered-items (->> (:invoice/items invoice)
+                            ;; Filter to items with respective functions
+                            (filter #(or
+                                       ;; verify match iva and not match retention
+                                       (and (match-iva %) (not (match-retention %)))
+                                       ;; verify match retention and not match iva
+                                       (and (match-retention %) (not (match-iva %))))))]
     ;; verify functions have return items to iva and retention
-    (if (and (some match-iva filtered-items)
-             (some match-retention filtered-items))
+    (if (and (->> filtered-items (some match-iva))
+             (->> filtered-items (some match-retention)))
       ;; if true, return filtered list
       filtered-items
       ;; if false, return empty list
